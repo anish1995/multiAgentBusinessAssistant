@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: businessassistant
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  ai-services:
+    build: ./ai-services
+    ports:
+      - "8000:8000"
+    environment:
+      BACKEND_URL: http://backend:8080
+    volumes:
+      - ./ai-services:/app
+
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    environment:
+      AI_SERVICES_URL: http://ai-services:8000
+      CORS_ORIGINS: http://localhost:3000
+    depends_on:
+      - ai-services
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8080
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

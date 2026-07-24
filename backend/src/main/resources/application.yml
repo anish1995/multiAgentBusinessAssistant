@@ -1,0 +1,25 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: business-assistant-backend
+  datasource:
+    url: jdbc:h2:mem:businessassistant;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+ai-services:
+  base-url: ${AI_SERVICES_URL:http://localhost:8000}
+
+cors:
+  allowed-origins: ${CORS_ORIGINS:http://localhost:3000}

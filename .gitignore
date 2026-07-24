@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+frontend/.next/
+frontend/out/
+
+# Python
+ai-services/.venv/
+ai-services/__pycache__/
+ai-services/**/__pycache__/
+ai-services/.pytest_cache/
+ai-services/data/
+
+# Java
+backend/target/
+backend/.classpath
+backend/.project
+backend/.settings/
+
+# Environment
+.env
+.env.local
+ai-services/.env
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
