@@ -112,4 +112,3 @@ Frontend runs on `http://localhost:3000`.
 - **Frontend:** Next.js, TypeScript, Tailwind CSS
 - **Backend:** Spring Boot, Spring Security, Spring Data JPA
 - **AI:** FastAPI, Python agents, LangChain/OpenAI ready
-# portfolio
