@@ -27,7 +27,7 @@ export function Badge({ children, variant = "default" }: BadgeProps) {
 export function statusVariant(status: string): BadgeVariant {
   const normalized = status.toUpperCase();
 
-  if (["PAID", "WON", "RESOLVED", "CLOSED", "QUALIFIED"].includes(normalized)) {
+  if (["PAID", "WON", "RESOLVED", "CLOSED", "QUALIFIED", "COMPLETED"].includes(normalized)) {
     return "success";
   }
   if (["OVERDUE", "HIGH", "LOST", "CANCELLED"].includes(normalized)) {

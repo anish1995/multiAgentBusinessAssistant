@@ -1,12 +1,26 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
 import { ApiUnavailableBanner } from "@/components/ApiUnavailableBanner";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
+import { TicketDetailModal } from "@/components/TicketDetailModal";
 import { Badge, statusVariant } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
-import { getTickets } from "@/lib/api";
+import { getTickets, SupportTicket } from "@/lib/api";
 
-export default async function TicketsPage() {
-  const ticketsResult = await getTickets();
+export default function TicketsPage() {
+  const [ticketsResult, setTicketsResult] = useState<Awaited<ReturnType<typeof getTickets>> | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+
+  useEffect(() => {
+    getTickets().then(setTicketsResult);
+  }, []);
+
+  if (!ticketsResult) {
+    return <div className="text-sm text-slate-500">Loading tickets...</div>;
+  }
 
   return (
     <div className="space-y-8">
@@ -45,6 +59,7 @@ export default async function TicketsPage() {
                 </div>
                 <button
                   type="button"
+                  onClick={() => setSelectedTicket(ticket)}
                   className="shrink-0 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-indigo-200 hover:text-indigo-700"
                 >
                   View details
@@ -54,6 +69,8 @@ export default async function TicketsPage() {
           ))}
         </div>
       )}
+
+      <TicketDetailModal ticket={selectedTicket} onClose={() => setSelectedTicket(null)} />
     </div>
   );
 }

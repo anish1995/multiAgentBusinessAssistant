@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 
+import { AuthGuard } from "@/components/AuthGuard";
 import { Sidebar } from "@/components/Sidebar";
 import { TopBar } from "@/components/TopBar";
 
@@ -10,6 +11,7 @@ const titles: Record<string, string> = {
   "/leads": "Leads",
   "/tickets": "Support Tickets",
   "/invoices": "Invoices",
+  "/tasks": "Tasks",
   "/agents": "Agent Console",
 };
 
@@ -22,12 +24,14 @@ export default function DashboardLayout({
   const title = titles[pathname] ?? "Dashboard";
 
   return (
-    <div className="app-shell flex min-h-screen text-slate-900">
-      <Sidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar title={title} />
-        <main className="flex-1 overflow-y-auto px-8 py-8">{children}</main>
+    <AuthGuard>
+      <div className="app-shell flex min-h-screen text-slate-900">
+        <Sidebar />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <TopBar title={title} />
+          <main className="flex-1 overflow-y-auto px-8 py-8">{children}</main>
+        </div>
       </div>
-    </div>
+    </AuthGuard>
   );
 }

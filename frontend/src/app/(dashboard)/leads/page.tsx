@@ -1,12 +1,18 @@
 import { ApiUnavailableBanner } from "@/components/ApiUnavailableBanner";
+import { ExportLeadsButton } from "@/components/ExportLeadsButton";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge, statusVariant } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { getLeads } from "@/lib/api";
 
-export default async function LeadsPage() {
-  const leadsResult = await getLeads();
+type LeadsPageProps = {
+  searchParams: Promise<{ search?: string }>;
+};
+
+export default async function LeadsPage({ searchParams }: LeadsPageProps) {
+  const params = await searchParams;
+  const leadsResult = await getLeads(params.search);
 
   return (
     <div className="space-y-8">
@@ -15,12 +21,9 @@ export default async function LeadsPage() {
         title="Leads"
         description="Track prospects and qualification status. Managed by the Sales Agent."
         action={
-          <button
-            type="button"
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300"
-          >
-            Export leads
-          </button>
+          leadsResult.ok && leadsResult.data.length > 0 ? (
+            <ExportLeadsButton leads={leadsResult.data} />
+          ) : null
         }
       />
 

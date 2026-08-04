@@ -9,9 +9,13 @@ import org.springframework.web.client.RestClient;
 public class RestClientConfig {
 
     @Bean
-    public RestClient aiServicesRestClient(@Value("${ai-services.base-url}") String baseUrl) {
+    public RestClient aiServicesRestClient(
+            @Value("${ai-services.base-url}") String baseUrl,
+            @Value("${ai-services.api-key}") String apiKey
+    ) {
         return RestClient.builder()
                 .baseUrl(baseUrl)
+                .defaultHeader("X-Internal-Api-Key", apiKey)
                 .build();
     }
 }

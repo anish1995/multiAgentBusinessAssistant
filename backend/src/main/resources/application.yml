@@ -5,21 +5,38 @@ spring:
   application:
     name: business-assistant-backend
   datasource:
-    url: jdbc:h2:mem:businessassistant;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:businessassistant}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: false
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
 
 ai-services:
   base-url: ${AI_SERVICES_URL:http://localhost:8000}
+  api-key: ${INTERNAL_API_KEY:internal-dev-api-key-change-in-production}
 
 cors:
   allowed-origins: ${CORS_ORIGINS:http://localhost:3000}
+
+jwt:
+  secret: ${JWT_SECRET:change-this-secret-in-production-use-at-least-32-characters}
+  access-expiration-ms: ${JWT_ACCESS_EXPIRATION_MS:900000}
+  refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+
+auth:
+  registration-enabled: ${REGISTRATION_ENABLED:true}
+
+internal:
+  api-key: ${INTERNAL_API_KEY:internal-dev-api-key-change-in-production}
+
+seed:
+  data-enabled: ${SEED_DATA_ENABLED:true}

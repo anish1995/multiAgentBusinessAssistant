@@ -4,6 +4,8 @@ import { ApiUnavailableBanner } from "@/components/ApiUnavailableBanner";
 import { IconAgents, IconArrowRight, IconInvoices, IconLeads, IconTickets } from "@/components/icons";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
+import { SystemStatus } from "@/components/SystemStatus";
+import { UserGreeting } from "@/components/UserGreeting";
 import { Card } from "@/components/ui/Card";
 import { getDashboardStats } from "@/lib/api";
 
@@ -37,7 +39,7 @@ export default async function DashboardPage() {
     <div className="space-y-8">
       <PageHeader
         eyebrow="Overview"
-        title="Good afternoon, Admin"
+        title={<UserGreeting />}
         description="Monitor business operations and orchestrate multi-agent workflows from a single command center."
         action={
           <Link
@@ -116,28 +118,7 @@ export default async function DashboardPage() {
 
         <Card>
           <p className="text-sm font-semibold text-slate-900">System status</p>
-          <div className="mt-4 space-y-3">
-            {[
-              { label: "Frontend", status: "Operational", ok: true },
-              { label: "Spring Boot API", status: statsResult.ok ? "Connected" : "Offline", ok: statsResult.ok },
-              { label: "AI Orchestrator", status: "Ready when started", ok: true },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3"
-              >
-                <span className="text-sm text-slate-600">{item.label}</span>
-                <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                  <span
-                    className={`h-2 w-2 rounded-full ${
-                      item.ok ? "bg-emerald-500" : "bg-amber-500 animate-pulse-soft"
-                    }`}
-                  />
-                  {item.status}
-                </span>
-              </div>
-            ))}
-          </div>
+          <SystemStatus apiConnected={statsResult.ok} />
         </Card>
       </div>
 

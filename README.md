@@ -1,50 +1,36 @@
 # Multi-Agent Business Assistant
 
-An enterprise-style full-stack project that demonstrates AI agents, workflow orchestration, and multi-tier architecture.
+An enterprise-style full-stack project with JWT auth, PostgreSQL, and multi-agent AI orchestration.
 
 ## Architecture
 
 ```text
-frontend/      Next.js dashboard
-backend/       Spring Boot APIs, business data, auth-ready layer
-ai-services/   Python multi-agent orchestration, LLM/RAG integration
+frontend/      Next.js dashboard (login, CRUD views, agent console)
+backend/       Spring Boot APIs, JWT, PostgreSQL, workflow orchestration
+ai-services/   FastAPI multi-agent orchestration (LLM + RAG when OpenAI key set)
 ```
-
-### Agents
-
-| Agent | Responsibility |
-| --- | --- |
-| Sales | Handle leads |
-| Support | Handle support tickets |
-| Finance | Handle invoices and reminders |
-| Knowledge | Answer questions from documents |
-| Manager | Coordinate all agents |
-
-### Example workflow
-
-User request:
-
-> Find overdue invoices, draft reminder emails, and create follow-up tasks.
-
-Flow:
-
-1. Next.js sends the request to Spring Boot
-2. Spring Boot loads business context and forwards to Python
-3. Manager agent delegates to Finance/Support/Sales/Knowledge agents
-4. Results return to the dashboard Agent Console
 
 ## Quick start
 
-### 1. AI services (Python)
+### 1. PostgreSQL
 
-**Easiest way (Windows):**
+Create the database:
 
-```bash
-cd ai-services
-run.bat
+```sql
+CREATE DATABASE businessassistant;
 ```
 
-Or manually:
+### 2. Backend
+
+```bash
+cd backend
+# Optional: copy .env.example values into environment variables
+mvn spring-boot:run
+```
+
+Defaults: `postgres/postgres` on `localhost:5432`.
+
+### 3. AI services
 
 ```bash
 cd ai-services
@@ -55,61 +41,54 @@ copy .env.example .env
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
-> Use `python -m uvicorn` instead of `uvicorn` directly — the module runs from your virtual environment without needing it on PATH.
+Set `OPENAI_API_KEY` in `.env` for LLM-enhanced agents and RAG embeddings.
 
-Optional LLM/RAG packages:
-
-```bash
-pip install -r requirements-ml.txt
-```
-
-### 2. Backend (Spring Boot)
-
-```bash
-cd backend
-mvn spring-boot:run
-```
-
-Backend runs on `http://localhost:8080`.
-
-### 3. Frontend (Next.js)
+### 4. Frontend
 
 ```bash
 cd frontend
-copy .env.example .env.local
 npm install
 npm run dev
 ```
 
-Frontend runs on `http://localhost:3000`.
+Login: `admin@businessassistant.com` / `admin123` (seeded on first run).
+
+### Docker Compose
+
+```bash
+docker compose up --build
+```
 
 ## API overview
 
 ### Backend (`:8080`)
 
-- `GET /api/health`
-- `GET /api/dashboard/stats`
-- `GET /api/leads`
-- `GET /api/tickets`
-- `GET /api/invoices`
+- `GET /api/health` — database + AI service status
+- `POST /api/auth/login`, `POST /api/auth/register`
+- `GET/POST/PUT/DELETE /api/leads`, `/api/tickets`, `/api/invoices`, `/api/tasks`
+- `POST /api/invoices/send-reminders`
 - `POST /api/agents/workflow`
 
 ### AI services (`:8000`)
 
 - `GET /api/health`
-- `POST /api/v1/orchestrate`
+- `POST /api/v1/orchestrate` (requires `X-Internal-Api-Key` header)
 
-## Next steps
+## Production configuration
 
-- Add JWT authentication in Spring Boot
-- Connect OpenAI/LangChain in `ai-services`
-- Add document ingestion and ChromaDB RAG for Knowledge Agent
-- Replace H2 with PostgreSQL for production
-- Add Docker Compose for one-command startup
+Set these environment variables:
+
+| Variable | Purpose |
+|----------|---------|
+| `JWT_SECRET` | JWT signing secret (32+ chars) |
+| `INTERNAL_API_KEY` | Shared key between backend and AI services |
+| `DB_*` | PostgreSQL connection |
+| `OPENAI_API_KEY` | Enables LLM agents and RAG embeddings |
+| `REGISTRATION_ENABLED` | `false` to disable public signup |
+| `SEED_DATA_ENABLED` | `false` to disable demo data seeding |
 
 ## Tech stack
 
 - **Frontend:** Next.js, TypeScript, Tailwind CSS
-- **Backend:** Spring Boot, Spring Security, Spring Data JPA
-- **AI:** FastAPI, Python agents, LangChain/OpenAI ready
-# portfolio
+- **Backend:** Spring Boot, Spring Security (JWT), Flyway, PostgreSQL
+- **AI:** FastAPI, LangChain, OpenAI, ChromaDB

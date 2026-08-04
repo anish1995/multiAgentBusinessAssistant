@@ -9,6 +9,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   ai-services:
     build: ./ai-services
@@ -16,8 +21,8 @@ services:
       - "8000:8000"
     environment:
       BACKEND_URL: http://backend:8080
-    volumes:
-      - ./ai-services:/app
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-internal-dev-api-key-change-in-production}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
 
   backend:
     build: ./backend
@@ -26,8 +31,17 @@ services:
     environment:
       AI_SERVICES_URL: http://ai-services:8000
       CORS_ORIGINS: http://localhost:3000
+      JWT_SECRET: ${JWT_SECRET:-change-this-secret-in-production-use-at-least-32-characters}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-internal-dev-api-key-change-in-production}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: businessassistant
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      SEED_DATA_ENABLED: "true"
     depends_on:
-      - ai-services
+      postgres:
+        condition: service_healthy
 
   frontend:
     build: ./frontend
@@ -35,6 +49,7 @@ services:
       - "3000:3000"
     environment:
       NEXT_PUBLIC_API_BASE_URL: http://localhost:8080
+      NEXT_PUBLIC_AI_BASE_URL: http://localhost:8000
     depends_on:
       - backend
 

@@ -3,7 +3,10 @@ package com.businessassistant.config;
 import com.businessassistant.domain.*;
 import com.businessassistant.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -11,15 +14,36 @@ import java.time.LocalDate;
 
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "seed.data-enabled", havingValue = "true", matchIfMissing = true)
 public class DataSeeder implements CommandLineRunner {
 
     private final LeadRepository leadRepository;
     private final SupportTicketRepository supportTicketRepository;
     private final InvoiceRepository invoiceRepository;
     private final TaskRepository taskRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) {
+        seedUsers();
+        seedBusinessData();
+    }
+
+    private void seedUsers() {
+        if (userRepository.count() > 0) {
+            return;
+        }
+
+        User admin = new User();
+        admin.setEmail("admin@businessassistant.com");
+        admin.setPassword(passwordEncoder.encode("admin123"));
+        admin.setFullName("Admin User");
+        admin.setRole(UserRole.ADMIN);
+        userRepository.save(admin);
+    }
+
+    private void seedBusinessData() {
         if (leadRepository.count() > 0) {
             return;
         }

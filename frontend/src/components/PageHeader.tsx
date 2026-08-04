@@ -1,6 +1,6 @@
 type PageHeaderProps = {
   eyebrow?: string;
-  title: string;
+  title: React.ReactNode;
   description?: string;
   action?: React.ReactNode;
 };
