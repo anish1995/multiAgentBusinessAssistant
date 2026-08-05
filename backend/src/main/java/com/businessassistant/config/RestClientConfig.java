@@ -10,10 +10,11 @@ public class RestClientConfig {
 
     @Bean
     public RestClient aiServicesRestClient(
+            RestClient.Builder restClientBuilder,
             @Value("${ai-services.base-url}") String baseUrl,
             @Value("${ai-services.api-key}") String apiKey
     ) {
-        return RestClient.builder()
+        return restClientBuilder
                 .baseUrl(baseUrl)
                 .defaultHeader("X-Internal-Api-Key", apiKey)
                 .build();

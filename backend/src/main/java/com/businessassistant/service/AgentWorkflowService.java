@@ -10,6 +10,8 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,48 +49,47 @@ public class AgentWorkflowService {
             return new AgentWorkflowResponse(
                     "AI services are unavailable. Start ai-services on port 8000.",
                     List.of("Manager agent could not reach Python orchestrator"),
-                    List.of(Map.of("error", ex.getMessage()))
+                    List.of(Map.of("error", ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName()))
             );
         }
     }
 
     Map<String, Object> buildContextPayload() {
         Map<String, Object> context = new HashMap<>();
-        context.put("overdue_invoices", toPlainList(businessDataService.getOverdueInvoices(), Invoice.class));
+        context.put("overdue_invoices", toPlainList(businessDataService.getOverdueInvoices()));
         context.put("open_tickets", toPlainList(
                 businessDataService.getTickets(null).stream()
                         .filter(ticket -> !"CLOSED".equals(ticket.getStatus().name())
                                 && !"RESOLVED".equals(ticket.getStatus().name()))
-                        .toList(),
-                SupportTicket.class
+                        .toList()
         ));
-        context.put("leads", toPlainList(businessDataService.getLeads(null), Lead.class));
+        context.put("leads", toPlainList(businessDataService.getLeads(null)));
         return context;
     }
 
-    private List<Map<String, Object>> toPlainList(List<?> items, Class<?> type) {
+    private List<Map<String, Object>> toPlainList(List<?> items) {
         List<Map<String, Object>> plainList = new ArrayList<>();
         for (Object item : items) {
             if (item == null) {
                 continue;
             }
-            plainList.add(toPlainMap(item, type));
+            plainList.add(toPlainMap(item));
         }
         return plainList;
     }
 
-    private Map<String, Object> toPlainMap(Object item, Class<?> type) {
+    private Map<String, Object> toPlainMap(Object item) {
         Map<String, Object> plainMap = new HashMap<>();
 
         if (item instanceof Invoice invoice) {
             plainMap.put("id", invoice.getId());
-            plainMap.put("invoiceNumber", invoice.getInvoiceNumber());
-            plainMap.put("customerName", invoice.getCustomerName());
-            plainMap.put("customerEmail", invoice.getCustomerEmail());
-            plainMap.put("amount", invoice.getAmount());
-            plainMap.put("dueDate", invoice.getDueDate());
+            plainMap.put("invoice_number", invoice.getInvoiceNumber());
+            plainMap.put("customer_name", invoice.getCustomerName());
+            plainMap.put("customer_email", invoice.getCustomerEmail());
+            plainMap.put("amount", invoice.getAmount() != null ? invoice.getAmount().toPlainString() : null);
+            plainMap.put("due_date", formatDate(invoice.getDueDate()));
             plainMap.put("status", invoice.getStatus() != null ? invoice.getStatus().name() : null);
-            plainMap.put("createdAt", invoice.getCreatedAt());
+            plainMap.put("created_at", formatInstant(invoice.getCreatedAt()));
             return plainMap;
         }
 
@@ -96,10 +97,10 @@ public class AgentWorkflowService {
             plainMap.put("id", ticket.getId());
             plainMap.put("subject", ticket.getSubject());
             plainMap.put("description", ticket.getDescription());
-            plainMap.put("customerEmail", ticket.getCustomerEmail());
+            plainMap.put("customer_email", ticket.getCustomerEmail());
             plainMap.put("status", ticket.getStatus() != null ? ticket.getStatus().name() : null);
             plainMap.put("priority", ticket.getPriority());
-            plainMap.put("createdAt", ticket.getCreatedAt());
+            plainMap.put("created_at", formatInstant(ticket.getCreatedAt()));
             return plainMap;
         }
 
@@ -110,15 +111,26 @@ public class AgentWorkflowService {
             plainMap.put("company", lead.getCompany());
             plainMap.put("notes", lead.getNotes());
             plainMap.put("status", lead.getStatus() != null ? lead.getStatus().name() : null);
-            plainMap.put("createdAt", lead.getCreatedAt());
+            plainMap.put("created_at", formatInstant(lead.getCreatedAt()));
             return plainMap;
         }
 
-        plainMap.put("value", item);
+        plainMap.put("value", String.valueOf(item));
         return plainMap;
     }
 
+    private static String formatDate(LocalDate date) {
+        return date != null ? date.toString() : null;
+    }
+
+    private static String formatInstant(Instant instant) {
+        return instant != null ? instant.toString() : null;
+    }
+
     private void persistTasksFromResults(List<Map<String, Object>> results) {
+        if (results == null) {
+            return;
+        }
         for (Map<String, Object> result : results) {
             if ("create_follow_up_tasks".equals(result.get("action"))) {
                 Object tasks = result.get("tasks");
@@ -137,6 +149,9 @@ public class AgentWorkflowService {
         Object title = taskMap.get("title");
         Object description = taskMap.get("description");
         Object assignedAgent = taskMap.get("assigned_agent");
+        if (assignedAgent == null) {
+            assignedAgent = taskMap.get("assignedAgent");
+        }
         if (title == null || assignedAgent == null) {
             return;
         }
