@@ -1,18 +1,60 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+import { AdminOnlyAction } from "@/components/AdminOnlyAction";
 import { ApiUnavailableBanner } from "@/components/ApiUnavailableBanner";
-import { ExportLeadsButton } from "@/components/ExportLeadsButton";
 import { EmptyState } from "@/components/EmptyState";
+import { ExportLeadsButton } from "@/components/ExportLeadsButton";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge, statusVariant } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
-import { getLeads } from "@/lib/api";
+import { createLead, getLeads } from "@/lib/api";
 
 type LeadsPageProps = {
   searchParams: Promise<{ search?: string }>;
 };
 
-export default async function LeadsPage({ searchParams }: LeadsPageProps) {
-  const params = await searchParams;
-  const leadsResult = await getLeads(params.search);
+export default function LeadsPage({ searchParams }: LeadsPageProps) {
+  const [params, setParams] = useState<{ search?: string }>({});
+  const [leadsResult, setLeadsResult] = useState<Awaited<ReturnType<typeof getLeads>> | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [formState, setFormState] = useState({
+    name: "",
+    email: "",
+    company: "",
+    notes: "",
+    status: "NEW",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    async function load() {
+      const resolved = await searchParams;
+      setParams(resolved);
+      const result = await getLeads(resolved.search);
+      setLeadsResult(result);
+    }
+    load();
+  }, [searchParams]);
+
+  async function submitLead(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsSubmitting(true);
+    try {
+      await createLead(formState);
+      setFormState({ name: "", email: "", company: "", notes: "", status: "NEW" });
+      setIsFormOpen(false);
+      const refreshed = await getLeads(params.search);
+      setLeadsResult(refreshed);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  if (!leadsResult) {
+    return <div className="text-sm text-slate-500">Loading leads...</div>;
+  }
 
   return (
     <div className="space-y-8">
@@ -21,11 +63,90 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
         title="Leads"
         description="Track prospects and qualification status. Managed by the Sales Agent."
         action={
-          leadsResult.ok && leadsResult.data.length > 0 ? (
-            <ExportLeadsButton leads={leadsResult.data} />
-          ) : null
+          <div className="flex items-center gap-3">
+            <AdminOnlyAction>
+              <button
+                type="button"
+                onClick={() => setIsFormOpen((open) => !open)}
+                className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-500/20 transition hover:bg-indigo-500"
+              >
+                {isFormOpen ? "Close form" : "New lead"}
+              </button>
+            </AdminOnlyAction>
+            {leadsResult.ok && leadsResult.data.length > 0 ? (
+              <ExportLeadsButton leads={leadsResult.data} />
+            ) : null}
+          </div>
         }
       />
+
+      <AdminOnlyAction>
+        {isFormOpen ? (
+          <Card>
+            <form onSubmit={submitLead} className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Name</label>
+                <input
+                  value={formState.name}
+                  onChange={(event) => setFormState({ ...formState, name: event.target.value })}
+                  required
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-indigo-300 focus:ring-4 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
+                <input
+                  type="email"
+                  value={formState.email}
+                  onChange={(event) => setFormState({ ...formState, email: event.target.value })}
+                  required
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-indigo-300 focus:ring-4 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Company</label>
+                <input
+                  value={formState.company}
+                  onChange={(event) => setFormState({ ...formState, company: event.target.value })}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-indigo-300 focus:ring-4 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Status</label>
+                <select
+                  value={formState.status}
+                  onChange={(event) => setFormState({ ...formState, status: event.target.value })}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-indigo-300 focus:ring-4 focus:ring-indigo-100"
+                >
+                  <option value="NEW">New</option>
+                  <option value="CONTACTED">Contacted</option>
+                  <option value="QUALIFIED">Qualified</option>
+                  <option value="NEGOTIATION">Negotiation</option>
+                  <option value="CLOSED">Closed</option>
+                </select>
+              </div>
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-sm font-medium text-slate-700">Notes</label>
+                <textarea
+                  value={formState.notes}
+                  onChange={(event) => setFormState({ ...formState, notes: event.target.value })}
+                  rows={4}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-indigo-300 focus:ring-4 focus:ring-indigo-100"
+                />
+              </div>
+              <div className="md:col-span-2 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSubmitting ? "Creating..." : "Create lead"}
+                </button>
+              </div>
+            </form>
+          </Card>
+        ) : null}
+      </AdminOnlyAction>
 
       {!leadsResult.ok ? (
         <ApiUnavailableBanner message={leadsResult.error} />

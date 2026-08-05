@@ -52,6 +52,14 @@ export function isAuthenticated(): boolean {
   return Boolean(getToken() || getRefreshToken());
 }
 
+export function isAdmin(): boolean {
+  const user = getUser();
+  if (!user?.role) {
+    return false;
+  }
+  return user.role.toUpperCase() === "ADMIN" || user.role.toUpperCase() === "ROLE_ADMIN";
+}
+
 export function setSession(auth: AuthResponse): void {
   localStorage.setItem(TOKEN_KEY, auth.token);
   localStorage.setItem(REFRESH_TOKEN_KEY, auth.refreshToken);

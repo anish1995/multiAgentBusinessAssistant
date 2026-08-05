@@ -1,11 +1,24 @@
 from pathlib import Path
 
 import chromadb
-from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 from app.config import settings
 
 COLLECTION_NAME = "business_knowledge"
+
+
+class GeminiEmbeddingFunction:
+    def __init__(self, api_key: str) -> None:
+        self._embeddings = GoogleGenerativeAIEmbeddings(
+            google_api_key=api_key,
+            model="models/text-embedding-004",
+        )
+
+    def __call__(self, input):
+        if isinstance(input, str):
+            input = [input]
+        return self._embeddings.embed_documents(input)
 
 
 class KnowledgeStore:
@@ -19,10 +32,7 @@ class KnowledgeStore:
 
         embedding_function = None
         if settings.llm_enabled():
-            embedding_function = OpenAIEmbeddingFunction(
-                api_key=settings.openai_api_key,
-                model_name="text-embedding-3-small",
-            )
+            embedding_function = GeminiEmbeddingFunction(settings.gemini_api_key)
 
         self._collection = self._client.get_or_create_collection(
             name=COLLECTION_NAME,

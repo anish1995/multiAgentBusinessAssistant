@@ -68,6 +68,37 @@ export type AgentWorkflowResponse = {
   results: Record<string, unknown>[];
 };
 
+export type CreateTicketPayload = {
+  subject: string;
+  description: string;
+  customerEmail: string;
+  priority: string;
+};
+
+export type CreateTaskPayload = {
+  title: string;
+  description: string;
+  assignedAgent: string;
+  status?: string;
+};
+
+export type CreateLeadPayload = {
+  name: string;
+  email: string;
+  company?: string;
+  notes?: string;
+  status?: string;
+};
+
+export type CreateInvoicePayload = {
+  invoiceNumber: string;
+  customerName: string;
+  customerEmail: string;
+  amount: number;
+  dueDate: string;
+  status?: string;
+};
+
 let refreshPromise: Promise<boolean> | null = null;
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
@@ -268,6 +299,34 @@ export function updateTask(id: number, task: Omit<Task, "id">) {
       assignedAgent: task.assignedAgent,
       status: task.status,
     }),
+  });
+}
+
+export function createTicket(payload: CreateTicketPayload) {
+  return fetchJson<SupportTicket>("/api/tickets", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function createTask(payload: CreateTaskPayload) {
+  return fetchJson<Task>("/api/tasks", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function createLead(payload: CreateLeadPayload) {
+  return fetchJson<Lead>("/api/leads", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function createInvoice(payload: CreateInvoicePayload) {
+  return fetchJson<Invoice>("/api/invoices", {
+    method: "POST",
+    body: JSON.stringify(payload),
   });
 }
 

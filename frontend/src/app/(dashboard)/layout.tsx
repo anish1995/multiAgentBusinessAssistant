@@ -25,11 +25,11 @@ export default function DashboardLayout({
 
   return (
     <AuthGuard>
-      <div className="app-shell flex min-h-screen text-slate-900">
+      <div className="app-shell flex h-screen overflow-hidden text-slate-900">
         <Sidebar />
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <TopBar title={title} />
-          <main className="flex-1 overflow-y-auto px-8 py-8">{children}</main>
+          <main className="min-h-0 flex-1 overflow-y-auto px-8 py-8">{children}</main>
         </div>
       </div>
     </AuthGuard>
