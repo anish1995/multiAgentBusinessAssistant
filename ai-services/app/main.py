@@ -1,7 +1,10 @@
+import logging
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI
+from fastapi import Body, Depends, FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.agents.manager_agent import ManagerAgent
 from app.auth import verify_internal_api_key
@@ -9,6 +12,7 @@ from app.config import settings
 from app.models import OrchestrationRequest, OrchestrationResponse
 from app.services.knowledge_store import knowledge_store
 
+logger = logging.getLogger("ai-services")
 manager = ManagerAgent()
 
 
@@ -33,6 +37,23 @@ app.add_middleware(
 )
 
 
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    logger.error(
+        "422 validation failed path=%s errors=%s body=%s",
+        request.url.path,
+        exc.errors(),
+        exc.body,
+    )
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": exc.errors(),
+            "body": exc.body if isinstance(exc.body, (dict, list, str, type(None))) else str(exc.body),
+        },
+    )
+
+
 @app.get("/api/health")
 def health() -> dict[str, str | bool]:
     return {
@@ -44,7 +65,7 @@ def health() -> dict[str, str | bool]:
 
 @app.post("/api/v1/orchestrate", response_model=OrchestrationResponse)
 def orchestrate(
-    request: OrchestrationRequest,
+    payload: OrchestrationRequest = Body(...),
     _: None = Depends(verify_internal_api_key),
 ) -> OrchestrationResponse:
-    return manager.orchestrate(request.query, request.context)
+    return manager.orchestrate(payload.query, payload.context)

@@ -57,7 +57,7 @@ class AgentWorkflowServiceTest {
         Mockito.when(businessDataService.getTickets(null)).thenReturn(List.of(ticket));
         Mockito.when(businessDataService.getLeads(null)).thenReturn(List.of(lead));
 
-        AgentWorkflowService service = new AgentWorkflowService(null, businessDataService);
+        AgentWorkflowService service = new AgentWorkflowService(null, businessDataService, null);
 
         Map<String, Object> payload = service.buildContextPayload();
 

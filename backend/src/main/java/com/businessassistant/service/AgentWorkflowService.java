@@ -5,10 +5,15 @@ import com.businessassistant.domain.Lead;
 import com.businessassistant.domain.SupportTicket;
 import com.businessassistant.dto.AgentWorkflowRequest;
 import com.businessassistant.dto.AgentWorkflowResponse;
+import com.businessassistant.dto.AiOrchestrationRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -21,23 +26,27 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AgentWorkflowService {
 
+    private static final Logger log = LoggerFactory.getLogger(AgentWorkflowService.class);
+
     private final RestClient aiServicesRestClient;
     private final BusinessDataService businessDataService;
+    private final ObjectMapper objectMapper;
 
     public AgentWorkflowResponse runWorkflow(AgentWorkflowRequest request) {
         return runWorkflow(request.query());
     }
 
     public AgentWorkflowResponse runWorkflow(String query) {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("query", query);
-        payload.put("context", buildContextPayload());
+        AiOrchestrationRequest payload = new AiOrchestrationRequest(query, buildContextPayload());
 
         try {
+            // Serialize explicitly so the JSON shape always matches OrchestrationRequest.
+            byte[] body = objectMapper.writeValueAsBytes(payload);
+
             AgentWorkflowResponse response = aiServicesRestClient.post()
                     .uri("/api/v1/orchestrate")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(payload)
+                    .body(body)
                     .retrieve()
                     .body(AgentWorkflowResponse.class);
 
@@ -45,7 +54,26 @@ public class AgentWorkflowService {
                 persistTasksFromResults(response.results());
             }
             return response;
+        } catch (RestClientResponseException ex) {
+            String responseBody = ex.getResponseBodyAsString();
+            log.error(
+                    "AI orchestrate failed status={} body={} payloadQueryLength={}",
+                    ex.getStatusCode().value(),
+                    responseBody,
+                    query != null ? query.length() : null
+            );
+            return new AgentWorkflowResponse(
+                    "AI services rejected the orchestration request (HTTP " + ex.getStatusCode().value() + ").",
+                    List.of("Manager agent received an error from Python orchestrator"),
+                    List.of(Map.of(
+                            "status", ex.getStatusCode().value(),
+                            "error", responseBody != null && !responseBody.isBlank()
+                                    ? responseBody
+                                    : ex.getMessage()
+                    ))
+            );
         } catch (Exception ex) {
+            log.error("AI orchestrate call failed", ex);
             return new AgentWorkflowResponse(
                     "AI services are unavailable. Start ai-services on port 8000.",
                     List.of("Manager agent could not reach Python orchestrator"),

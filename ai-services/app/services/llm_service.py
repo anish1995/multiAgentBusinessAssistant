@@ -1,10 +1,14 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
+from typing import Any
 
 from app.config import settings
 
 
-def get_chat_model() -> ChatGoogleGenerativeAI | None:
+def get_chat_model() -> Any | None:
     if not settings.llm_enabled():
+        return None
+    try:
+        from langchain_google_genai import ChatGoogleGenerativeAI
+    except ImportError:
         return None
     return ChatGoogleGenerativeAI(
         google_api_key=settings.gemini_api_key,

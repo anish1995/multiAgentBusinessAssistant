@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Size;
 
 public record AgentWorkflowRequest(
         @NotBlank
-        @Size(min = 3, message = "query must be at least 3 characters")
+        @Size(min = 1, message = "query must not be blank")
         String query
 ) {
 }
