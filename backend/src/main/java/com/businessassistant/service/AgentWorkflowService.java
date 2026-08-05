@@ -40,13 +40,15 @@ public class AgentWorkflowService {
         AiOrchestrationRequest payload = new AiOrchestrationRequest(query, buildContextPayload());
 
         try {
-            // Serialize explicitly so the JSON shape always matches OrchestrationRequest.
-            byte[] body = objectMapper.writeValueAsBytes(payload);
+            if (log.isDebugEnabled()) {
+                log.debug("AI orchestrate request body: {}", objectMapper.writeValueAsString(payload));
+            }
 
             AgentWorkflowResponse response = aiServicesRestClient.post()
                     .uri("/api/v1/orchestrate")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(body)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .body(payload)
                     .retrieve()
                     .body(AgentWorkflowResponse.class);
 
