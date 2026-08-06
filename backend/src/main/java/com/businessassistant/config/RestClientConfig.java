@@ -20,10 +20,11 @@ public class RestClientConfig {
     ) {
         JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(
                 HttpClient.newBuilder()
+                        .version(HttpClient.Version.HTTP_1_1)
                         .connectTimeout(Duration.ofSeconds(10))
                         .build()
         );
-        requestFactory.setReadTimeout(Duration.ofSeconds(60));
+        requestFactory.setReadTimeout(Duration.ofSeconds(180));
 
         return restClientBuilder
                 .clone()

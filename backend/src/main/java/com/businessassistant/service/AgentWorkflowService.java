@@ -38,10 +38,12 @@ public class AgentWorkflowService {
 
     public AgentWorkflowResponse runWorkflow(String query) {
         AiOrchestrationRequest payload = new AiOrchestrationRequest(query, buildContextPayload());
-
         try {
+            String payloadJson = objectMapper.writeValueAsString(payload);
+            objectMapper.readTree(payloadJson);
+
             if (log.isDebugEnabled()) {
-                log.debug("AI orchestrate request body: {}", objectMapper.writeValueAsString(payload));
+                log.debug("AI orchestrate request body: {}", payloadJson);
             }
 
             AgentWorkflowResponse response = aiServicesRestClient.post()
