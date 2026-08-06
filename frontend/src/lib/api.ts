@@ -6,8 +6,15 @@ import {
   type AuthResponse,
 } from "@/lib/auth";
 
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
+function resolvePublicBaseUrl(value: string | undefined, fallback: string): string {
+  const resolved = (value ?? fallback).trim().replace(/\/+$/, "");
+  return resolved || fallback;
+}
+
+export const API_BASE_URL = resolvePublicBaseUrl(
+  process.env.NEXT_PUBLIC_API_BASE_URL,
+  "http://localhost:8080",
+);
 
 export type ApiResult<T> =
   | { ok: true; data: T }
@@ -345,7 +352,10 @@ export function sendInvoiceReminders() {
 
 export async function getAiHealth(): Promise<{ ok: boolean; llmEnabled?: boolean }> {
   try {
-    const aiBase = process.env.NEXT_PUBLIC_AI_BASE_URL ?? "http://localhost:8000";
+    const aiBase = resolvePublicBaseUrl(
+      process.env.NEXT_PUBLIC_AI_BASE_URL,
+      "http://localhost:8000",
+    );
     const response = await fetch(`${aiBase}/api/health`, { cache: "no-store" });
     if (!response.ok) {
       return { ok: false };
