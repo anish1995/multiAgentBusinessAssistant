@@ -18,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,11 +41,16 @@ public class AuthService {
     private boolean registrationEnabled;
 
     public AuthResponse login(LoginRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.email(), request.password())
-        );
-        SecurityUser securityUser = (SecurityUser) authentication.getPrincipal();
-        return buildAuthResponse(securityUser.getUser());
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.email(), request.password())
+            );
+            SecurityUser securityUser = (SecurityUser) authentication.getPrincipal();
+            return buildAuthResponse(securityUser.getUser());
+        } catch (AuthenticationException ex) {
+            // Avoid Spring Security mapping this to the generic JWT entry-point response.
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
+        }
     }
 
     public AuthResponse register(RegisterRequest request) {
