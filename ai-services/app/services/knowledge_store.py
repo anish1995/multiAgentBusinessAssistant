@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 
 import chromadb
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
@@ -6,19 +7,42 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from app.config import settings
 
 COLLECTION_NAME = "business_knowledge"
+EMBEDDING_MODEL = "models/text-embedding-004"
 
 
 class GeminiEmbeddingFunction:
-    def __init__(self, api_key: str) -> None:
+    """Chroma embedding function backed by Gemini.
+
+    Newer Chroma versions require name/get_config/build_from_config in addition to __call__.
+    """
+
+    def __init__(self, api_key: str, model: str = EMBEDDING_MODEL) -> None:
+        self._model = model
         self._embeddings = GoogleGenerativeAIEmbeddings(
             google_api_key=api_key,
-            model="models/text-embedding-004",
+            model=model,
         )
 
     def __call__(self, input):
-        if isinstance(input, str):
-            input = [input]
-        return self._embeddings.embed_documents(input)
+        texts = [input] if isinstance(input, str) else list(input)
+        return self._embeddings.embed_documents(texts)
+
+    @staticmethod
+    def name() -> str:
+        return "gemini"
+
+    def get_config(self) -> dict[str, Any]:
+        return {"model": self._model}
+
+    @staticmethod
+    def build_from_config(config: dict[str, Any]) -> "GeminiEmbeddingFunction":
+        api_key = settings.gemini_api_key
+        if not api_key:
+            raise ValueError("GEMINI_API_KEY is required to rebuild GeminiEmbeddingFunction")
+        return GeminiEmbeddingFunction(
+            api_key=api_key,
+            model=config.get("model", EMBEDDING_MODEL),
+        )
 
 
 class KnowledgeStore:
@@ -34,10 +58,23 @@ class KnowledgeStore:
         if settings.llm_enabled():
             embedding_function = GeminiEmbeddingFunction(settings.gemini_api_key)
 
-        self._collection = self._client.get_or_create_collection(
-            name=COLLECTION_NAME,
-            embedding_function=embedding_function,
-        )
+        try:
+            self._collection = self._client.get_or_create_collection(
+                name=COLLECTION_NAME,
+                embedding_function=embedding_function,
+            )
+        except ValueError as exc:
+            # Stale collections from earlier deploys may persist a different EF config.
+            if "embedding function" not in str(exc).lower():
+                raise
+            try:
+                self._client.delete_collection(COLLECTION_NAME)
+            except Exception:
+                pass
+            self._collection = self._client.get_or_create_collection(
+                name=COLLECTION_NAME,
+                embedding_function=embedding_function,
+            )
         return self._collection
 
     def ingest_documents(self) -> None:
