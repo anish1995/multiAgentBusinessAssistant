@@ -18,7 +18,10 @@ manager = ManagerAgent()
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    knowledge_store.ingest_documents()
+    try:
+        knowledge_store.ingest_documents()
+    except Exception:
+        logger.exception("Knowledge store ingest failed during startup; continuing without preloaded docs")
     yield
 
 

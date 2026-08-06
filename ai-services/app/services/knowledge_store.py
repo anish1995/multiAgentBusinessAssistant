@@ -7,7 +7,8 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from app.config import settings
 
 COLLECTION_NAME = "business_knowledge"
-EMBEDDING_MODEL = "models/text-embedding-004"
+# text-embedding-004 was shut down; use a currently supported Gemini embedding model.
+EMBEDDING_MODEL = "gemini-embedding-001"
 
 
 class GeminiEmbeddingFunction:
@@ -29,7 +30,7 @@ class GeminiEmbeddingFunction:
 
     @staticmethod
     def name() -> str:
-        return "gemini"
+        return "gemini-embedding-001"
 
     def get_config(self) -> dict[str, Any]:
         return {"model": self._model}
